@@ -1,0 +1,56 @@
+
+name: Build GeoMetal PI APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Installer Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Installer les dependances Linux
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git zip unzip \
+            autoconf automake libtool pkg-config \
+            zlib1g-dev libncurses5-dev libncursesw5-dev \
+            cmake libffi-dev libssl-dev build-essential
+
+      - name: Installer Buildozer
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install "Cython==0.29.36"
+          python -m pip install "buildozer==1.5.0"
+
+      - name: Compiler GeoMetal PI
+        env:
+          BUILDOZER_WARN_ON_ROOT: "0"
+        run: |
+          yes | buildozer android debug
+
+      - name: Publier APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: GeoMetal-PI-APK
+          path: bin/*.apk
+          if-no-files-found: error
